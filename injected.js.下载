@@ -1,0 +1,547 @@
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+(function () {
+    var urlParams = new URLSearchParams(window.location.search);
+    var ORIGIN = urlParams.get('parentOrigin') || '*';
+    var SVG_TAG = ['path', 'circle', 'rect', 'line', 'polygon', 'polyline', 'ellipse', 'text'];
+    var Injected = /** @class */ (function () {
+        function Injected(doc) {
+            var _this = this;
+            this.targetNode = null;
+            this.updateTargetNodeInfo = {};
+            this.hoverNode = null;
+            this.eachNodes = [];
+            this.inited = false;
+            this.nodeAttributeObserver = new MutationObserver(function (mutationsList) {
+                for (var _i = 0, mutationsList_1 = mutationsList; _i < mutationsList_1.length; _i++) {
+                    var mutation = mutationsList_1[_i];
+                    if (mutation.type === 'attributes' &&
+                        (mutation.attributeName === 'data-md-id' || mutation.attributeName === 'data-component-content')) {
+                        var target = mutation.target;
+                        _this.targetMessage(target, 'iframe-target-change');
+                    }
+                }
+            });
+            this.doc = doc;
+            this.messageHandler = this.message.bind(this);
+            this.scrollHandle = this.scrollEvent.bind(this);
+            this.mouseleaveHandle = this.mouseleaveEvent.bind(this);
+            this.clickHandler = this.clickEvent.bind(this);
+            this.dblclickHandler = this.dblclickEvent.bind(this);
+            this.mouseoverHandler = this.mouseoverEvent.bind(this);
+            this.mousemoveHandler = this.dispatchMouseEvent.bind(this, 'mousemove');
+            this.mouseupHandler = this.dispatchMouseEvent.bind(this, 'mouseup');
+            this.pointermoveHandler = this.dispatchPointerEvent.bind(this, 'pointermove');
+            this.pointerupHandler = this.dispatchPointerEvent.bind(this, 'pointerup');
+        }
+        Injected.prototype.init = function () {
+            if (this.inited) {
+                return;
+            }
+            this.inited = true;
+            window.addEventListener('message', this.messageHandler);
+            this.doc.addEventListener('scroll', this.scrollHandle, true);
+            this.doc.addEventListener('mouseleave', this.mouseleaveHandle, true);
+            this.eventListener();
+            this.removeClickScript();
+        };
+        // 销毁
+        Injected.prototype.destroy = function () {
+            window.removeEventListener('message', this.messageHandler);
+            this.doc.removeEventListener('scroll', this.scrollHandle, true);
+            this.doc.removeEventListener('mouseleave', this.mouseleaveHandle, true);
+            this.removeEventListener();
+            this.nodeAttributeObserver.disconnect();
+            this.inited = false;
+            if (this.targetNode) {
+                this.targetNode.removeAttribute('data-editor-active');
+                this.nodeAttributeObserver.disconnect();
+            }
+            if (this.hoverNode) {
+                this.hoverNode.removeAttribute('data-editor-hover');
+            }
+            if (this.eachNodes.length > 0) {
+                this.eachNodes.forEach(function (item) {
+                    item.removeAttribute('data-editor-each');
+                });
+            }
+        };
+        Injected.prototype.scrollEvent = function () {
+            var target = this.targetNode;
+            if (!target) {
+                return;
+            }
+            // 处理滚动时，元素位置变化
+            var rect = target.getBoundingClientRect();
+            // postmessage无法传递函数, 主动传递
+            window.parent.postMessage({
+                type: 'iframe-scroll',
+                target: {
+                    rect: JSON.parse(JSON.stringify(rect))
+                }
+            }, ORIGIN);
+        };
+        Injected.prototype.mouseleaveEvent = function () {
+            // 鼠标离开时，清除hover状态
+            if (this.hoverNode) {
+                this.hoverNode.removeAttribute('data-editor-hover');
+                this.hoverNode = null;
+            }
+        };
+        Injected.prototype.isTarget = function (target) {
+            return !!(target === null || target === void 0 ? void 0 : target.dataset.mdId);
+        };
+        Injected.prototype.findTarget = function (target) {
+            // 处理svg内部元素
+            if (SVG_TAG.includes(target.tagName.toLowerCase())) {
+                return target.closest('svg[data-md-id]');
+            }
+            return target;
+        };
+        Injected.prototype.removeClickScript = function () {
+            var _a;
+            if ((_a = this.doc.defaultView) === null || _a === void 0 ? void 0 : _a.mdClick) {
+                this.doc.removeEventListener('click', this.doc.defaultView.mdClick, true);
+            }
+        };
+        Injected.prototype.fetchImageToBase64 = function (url) {
+            return __awaiter(this, void 0, void 0, function () {
+                var response, blob;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, fetch(url)];
+                        case 1:
+                            response = _a.sent();
+                            return [4 /*yield*/, response.blob()];
+                        case 2:
+                            blob = _a.sent();
+                            return [2 /*return*/, new Promise(function (resolve, reject) {
+                                    var reader = new FileReader();
+                                    reader.onloadend = function () {
+                                        if (typeof reader.result === 'string') {
+                                            resolve(reader.result);
+                                        }
+                                        else {
+                                            reject(new Error('Failed to convert blob to base64.'));
+                                        }
+                                    };
+                                    reader.onerror = reject;
+                                    reader.readAsDataURL(blob);
+                                })];
+                    }
+                });
+            });
+        };
+        Injected.prototype.targetMessage = function (target, type) {
+            return __awaiter(this, void 0, void 0, function () {
+                var style, content, editorConfig, src, img, img;
+                var _a, _b, _c, _d, _e, _f;
+                return __generator(this, function (_g) {
+                    switch (_g.label) {
+                        case 0:
+                            style = getComputedStyle(target);
+                            content = JSON.parse(decodeURIComponent(((_a = target === null || target === void 0 ? void 0 : target.dataset) === null || _a === void 0 ? void 0 : _a.componentContent) || '{}'));
+                            editorConfig = target.dataset.editorConfig;
+                            content.editorConfig = editorConfig ? JSON.parse(decodeURIComponent(editorConfig)) : {};
+                            if (!content.src) return [3 /*break*/, 6];
+                            src = content.src;
+                            content.img = src;
+                            if (!src.startsWith('/')) return [3 /*break*/, 2];
+                            return [4 /*yield*/, this.fetchImageToBase64(src)];
+                        case 1:
+                            img = _g.sent();
+                            content.img = img;
+                            _g.label = 2;
+                        case 2:
+                            if (!((_b = content.editorConfig) === null || _b === void 0 ? void 0 : _b.defaultSrc)) return [3 /*break*/, 5];
+                            img = (_c = content.editorConfig) === null || _c === void 0 ? void 0 : _c.defaultSrc;
+                            if (!((_d = content.editorConfig) === null || _d === void 0 ? void 0 : _d.defaultSrc.startsWith('/'))) return [3 /*break*/, 4];
+                            return [4 /*yield*/, this.fetchImageToBase64((_e = content.editorConfig) === null || _e === void 0 ? void 0 : _e.defaultSrc)];
+                        case 3:
+                            img = _g.sent();
+                            _g.label = 4;
+                        case 4:
+                            content.editorConfig.defaultImg = img;
+                            return [3 /*break*/, 6];
+                        case 5:
+                            content.editorConfig.defaultSrc = content.src;
+                            content.editorConfig.defaultImg = content.img;
+                            _g.label = 6;
+                        case 6:
+                            // 处理svg，增加dom
+                            if (content.svg || target.tagName === 'svg') {
+                                content.editorConfig = __assign(__assign({}, content.editorConfig), { outerHTML: target.outerHTML, isSvg: true // 增加一个固定标识，有时是svg但是不能编辑所以没有svg节点
+                                 });
+                            }
+                            window.parent.postMessage({
+                                type: type,
+                                target: {
+                                    rect: JSON.parse(JSON.stringify(target.getBoundingClientRect())),
+                                    innerHTML: target.innerHTML,
+                                    data: {
+                                        componentTag: target.nodeName,
+                                        componentName: target.dataset.mdName,
+                                        componentId: target.dataset.mdId,
+                                        componentPath: target.dataset.componentPath,
+                                        componentLine: target.dataset.componentLine,
+                                        componentContent: content,
+                                        componentIndex: target.dataset.componentIndex,
+                                        componentIsRoot: target.dataset.componentIsRoot === 'true',
+                                        customAttr: {
+                                            href: target.getAttribute('data-href'),
+                                            target: target.getAttribute('data-target')
+                                        },
+                                        style: {
+                                            color: style.color,
+                                            fontSize: style.fontSize,
+                                            fontFamily: ((_f = style.fontFamily.split(',')[0]) === null || _f === void 0 ? void 0 : _f.replace('MF-', 'MF_')) || '',
+                                            margin: style.margin,
+                                            radius: style.borderRadius,
+                                            backgroundColor: style.backgroundColor,
+                                            backgroundImage: style.backgroundImage,
+                                            borderColor: style.borderColor,
+                                            borderWidth: style.borderWidth,
+                                            borderStyle: style.borderStyle
+                                        }
+                                    }
+                                }
+                            }, ORIGIN);
+                            return [2 /*return*/];
+                    }
+                });
+            });
+        };
+        Injected.prototype.setEachTarget = function (target) {
+            if (this.eachNodes.length > 0) {
+                this.eachNodes.forEach(function (item) {
+                    item.removeAttribute('data-editor-each');
+                });
+            }
+            var eachTarget = this.doc.querySelectorAll("[data-md-id=\"".concat(target.dataset.mdId, "\"]"));
+            if (eachTarget.length === 0) {
+                return;
+            }
+            eachTarget.forEach(function (item) {
+                item.setAttribute('data-editor-each', 'true');
+            });
+            this.eachNodes = eachTarget;
+        };
+        Injected.prototype.clickEvent = function (e) {
+            e.stopPropagation();
+            e.preventDefault();
+            var target = this.findTarget(e.target);
+            if (!this.isTarget(target)) {
+                return;
+            }
+            if (this.targetNode) {
+                this.targetNode.removeAttribute('data-editor-active');
+                this.nodeAttributeObserver.disconnect();
+            }
+            this.targetMessage(target, 'iframe-click');
+            this.setEachTarget(target);
+            this.targetNode = target;
+            this.targetNode.setAttribute('data-editor-active', 'true');
+            this.nodeAttributeObserver.observe(target, {
+                attributes: true
+            });
+        };
+        Injected.prototype.dblclickEvent = function (e) {
+            var target = e.target;
+            this.targetMessage(target, 'iframe-dblclick');
+        };
+        Injected.prototype.mouseoverEvent = function (e) {
+            var hoverNode = this.findTarget(e.target);
+            if (!this.isTarget(hoverNode)) {
+                return;
+            }
+            if (this.hoverNode) {
+                this.hoverNode.removeAttribute('data-editor-hover');
+            }
+            this.hoverNode = hoverNode;
+            this.hoverNode.setAttribute('data-editor-hover', 'true');
+        };
+        Injected.prototype.eventListener = function () {
+            this.doc.addEventListener('click', this.clickHandler, true);
+            this.doc.addEventListener('dblclick', this.dblclickHandler, true);
+            this.doc.addEventListener('mouseover', this.mouseoverHandler, true);
+            this.doc.addEventListener('mousemove', this.mousemoveHandler, true);
+            this.doc.addEventListener('mouseup', this.mouseupHandler, true);
+            this.doc.addEventListener('pointermove', this.pointermoveHandler, true);
+            this.doc.addEventListener('pointerup', this.pointerupHandler, true);
+        };
+        Injected.prototype.removeEventListener = function () {
+            this.doc.removeEventListener('click', this.clickHandler, true);
+            this.doc.removeEventListener('dblclick', this.dblclickHandler, true);
+            this.doc.removeEventListener('mouseover', this.mouseoverHandler, true);
+            this.doc.removeEventListener('mousemove', this.mousemoveHandler, true);
+            this.doc.removeEventListener('mouseup', this.mouseupHandler, true);
+            this.doc.removeEventListener('pointermove', this.pointermoveHandler, true);
+            this.doc.removeEventListener('pointerup', this.pointerupHandler, true);
+        };
+        Injected.prototype.dispatchMouseEvent = function (type, e) {
+            window.parent.postMessage({
+                type: 'iframe-mouse-event',
+                event: {
+                    type: type,
+                    bubbles: true,
+                    cancelable: true,
+                    clientX: e.clientX,
+                    clientY: e.clientY,
+                    screenX: e.screenX,
+                    screenY: e.screenY
+                }
+            }, ORIGIN);
+        };
+        Injected.prototype.dispatchPointerEvent = function (type, e) {
+            window.parent.postMessage({
+                type: 'iframe-pointer-event',
+                event: {
+                    type: type,
+                    pointerId: 1,
+                    clientX: e.clientX,
+                    clientY: e.clientY,
+                    screenX: e.screenX,
+                    screenY: e.screenY
+                }
+            }, ORIGIN);
+        };
+        Injected.prototype.message = function (e) {
+            var _this = this;
+            var _a, _b;
+            var event = e;
+            var targetNode = this.targetNode;
+            var updateTargetNodeInfo = this.updateTargetNodeInfo;
+            var doc = this.doc;
+            if (!((_a = event.data.type) === null || _a === void 0 ? void 0 : _a.startsWith('editor-'))) {
+                return;
+            }
+            if (event.data.type === 'editor-text') {
+                targetNode.setAttribute('contenteditable', 'true');
+                targetNode.focus();
+                var textBlur_1 = function (e) {
+                    var target = e.target;
+                    _this.targetMessage(target, 'iframe-text-blur');
+                    targetNode.removeAttribute('contenteditable');
+                    targetNode.removeEventListener('blur', textBlur_1);
+                    targetNode.removeEventListener('input', textChange_1);
+                };
+                var textChange_1 = function (e) {
+                    var target = e.target;
+                    var mdId = target.dataset.mdId;
+                    var value = target.innerHTML;
+                    var nodes = doc.querySelectorAll("[data-md-id=\"".concat(mdId, "\"]"));
+                    nodes.forEach(function (item) {
+                        if (item === targetNode) {
+                            return;
+                        }
+                        // bca-disable-line
+                        item.innerHTML = value;
+                    });
+                };
+                targetNode.addEventListener('blur', textBlur_1);
+                targetNode.addEventListener('input', textChange_1);
+                return;
+            }
+            if (event.data.type === 'editor-style') {
+                var _c = event.data, style_1 = _c.style, className_1 = _c.className, _d = _c.extra, extra = _d === void 0 ? {} : _d;
+                this.updateTargetNodeInfo = extra;
+                var _e = targetNode.dataset, mdId = _e.mdId, componentContent = _e.componentContent, _f = _e.editorStyle, editorStyle_1 = _f === void 0 ? '' : _f;
+                var content_1 = JSON.parse(decodeURIComponent(componentContent || '{}'));
+                content_1.className = className_1;
+                var nodes = doc.querySelectorAll("[data-md-id=\"".concat(mdId, "\"]"));
+                nodes.forEach(function (item) {
+                    if (style_1) {
+                        var newStyle = [editorStyle_1, style_1].join(';');
+                        item.style.cssText = newStyle;
+                        item.setAttribute('data-editor-style', item.style.cssText);
+                    }
+                    else if (className_1) {
+                        item.setAttribute('data-component-content', encodeURIComponent(JSON.stringify(content_1)));
+                    }
+                });
+                return;
+            }
+            if (event.data.type === 'editor-image') {
+                var _g = event.data, image = _g.image, editorConfig = _g.editorConfig;
+                targetNode.setAttribute('src', image);
+                if (editorConfig) {
+                    targetNode.setAttribute('data-editor-config', encodeURIComponent(JSON.stringify(editorConfig)));
+                    var content = JSON.parse(decodeURIComponent(targetNode.dataset.componentContent || '{}'));
+                    content.src = image;
+                    targetNode.setAttribute('data-component-content', encodeURIComponent(JSON.stringify(content)));
+                }
+                return;
+            }
+            if (event.data.type === 'editor-link') {
+                var _h = event.data, href = _h.href, target = _h.target;
+                targetNode.setAttribute('data-href', href);
+                targetNode.setAttribute('data-target', target);
+                return;
+            }
+            if (event.data.type === 'editor-video') {
+                var _j = event.data, value = _j.value, editorConfig = _j.editorConfig;
+                var videoElement = targetNode.querySelector('.video-react-video');
+                var posterElement = targetNode.querySelector('.video-react-poster');
+                videoElement.setAttribute('src', value);
+                videoElement.setAttribute('poster', editorConfig.poster);
+                posterElement.setAttribute('style', "background-image: url(\"".concat(editorConfig.poster, "\");"));
+                var content = JSON.parse(decodeURIComponent(targetNode.dataset.componentContent || '{}'));
+                content.src = value;
+                content.poster = editorConfig.poster;
+                targetNode.setAttribute('data-component-content', encodeURIComponent(JSON.stringify(content)));
+                return;
+            }
+            if (event.data.type === 'editor-delete') {
+                var id = event.data.id;
+                // 删除元素会直接调用沙盒更新和热更新
+                this.nodeAttributeObserver.disconnect();
+                window.postMessage({
+                    type: 'iframe-node-clear',
+                    id: id
+                }, '*');
+                return;
+            }
+            if (event.data.type === 'editor-icon') {
+                var value = event.data.value;
+                // 防止被image影响
+                if (targetNode.tagName === 'svg' && value) {
+                    var domParser = new DOMParser();
+                    var svgDoc = domParser.parseFromString(decodeURIComponent(value), 'image/svg+xml');
+                    var innerSvgDom = (_b = svgDoc.firstChild) === null || _b === void 0 ? void 0 : _b.innerHTML;
+                    if (innerSvgDom) {
+                        // bca-disable-line
+                        targetNode.innerHTML = decodeURIComponent(innerSvgDom); // 只更新svg内部，外部的有可能有JSX代码
+                        var svgDom = svgDoc.firstChild;
+                        var prevViewBox = targetNode.getAttribute('viewBox');
+                        var updateViewBox = svgDom.getAttribute('viewBox');
+                        prevViewBox && updateViewBox && targetNode.setAttribute('viewBox', updateViewBox);
+                    }
+                    return;
+                }
+            }
+            if (event.data.type === 'editor-update') {
+                var type = updateTargetNodeInfo.type, styleKey_1 = updateTargetNodeInfo.styleKey, filePath = updateTargetNodeInfo.filePath, line = updateTargetNodeInfo.line;
+                if (type === 'style' && Array.isArray(styleKey_1) && filePath && line) {
+                    var nodes_1 = doc.querySelectorAll("[data-component-path=\"".concat(filePath, "\"] [data-component-line=\"").concat(line, "\"]"));
+                    // vite:after-update监听到后，如果立马执行，还是会出现非常短暂的闪烁，这里延迟一下再清除
+                    setTimeout(function () {
+                        nodes_1.forEach(function (item) {
+                            styleKey_1.forEach(function (key) {
+                                item.style.removeProperty(key);
+                            });
+                            item.setAttribute('data-editor-style', '');
+                        });
+                    }, 100);
+                }
+            }
+        };
+        return Injected;
+    }());
+    var injected = new Injected(document);
+    function initInjectedHandler(e) {
+        if (e.data.type === 'editor-inject') {
+            injected.init();
+        }
+        if (e.data.type === 'editor-destroy') {
+            injected.destroy();
+        }
+    }
+    function updateLocationHandler(event) {
+        var _a;
+        if (!((_a = event.data.type) === null || _a === void 0 ? void 0 : _a.startsWith('editor-'))) {
+            return;
+        }
+        if (event.data.type === 'editor-location-update') {
+            var pageName = event.data.pageName;
+            var appType = event.data.appType;
+            if (pageName) {
+                if (appType === 'miniapp') {
+                    window.location.hash = pageName;
+                    window.dispatchEvent(new HashChangeEvent('hashchange'));
+                }
+                else {
+                    window.history.pushState({}, '', pageName);
+                    window.dispatchEvent(new Event('popstate'));
+                }
+            }
+        }
+    }
+    function handleGlobalError(event) {
+        var _a, _b, _c;
+        try {
+            window.parent.postMessage({
+                type: 'GLOBAL_ERROR',
+                error: event.error,
+                message: event.message,
+                // 提取 Error 对象的关键属性
+                errorData: {
+                    name: (_a = event.error) === null || _a === void 0 ? void 0 : _a.name,
+                    message: ((_b = event.error) === null || _b === void 0 ? void 0 : _b.message) || event.message,
+                    stack: (_c = event.error) === null || _c === void 0 ? void 0 : _c.stack,
+                    fileName: event.filename,
+                    lineNumber: event.lineno,
+                    columnNumber: event.colno
+                }
+            }, '*');
+            console.warn('[iframe-error] Global error:', event);
+        }
+        catch (error) {
+            console.warn('Failed to handle window error:', error);
+        }
+    }
+    window.addEventListener('message', updateLocationHandler);
+    window.addEventListener('message', initInjectedHandler);
+    window.addEventListener('error', handleGlobalError);
+    // 如果需要销毁
+    window.addEventListener('beforeunload', function () {
+        injected.destroy();
+        window.removeEventListener('message', initInjectedHandler);
+        window.removeEventListener('message', updateLocationHandler);
+        window.removeEventListener('error', handleGlobalError);
+    });
+})();
